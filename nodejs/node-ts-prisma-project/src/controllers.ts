@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -27,10 +28,51 @@ export const getUsuarios = async (req: Request, res: Response) => {
 
 export const createUsuario = async (req: Request, res: Response) => {
   const { email, nome, senha, telefone, data_aniversario } = req.body;
+  // Gerar o hash da senha com um custo de 10 rounds
+  const hashedPassword = await bcrypt.hash(senha, 10);
+
   const usuario = await prisma.tb_usuario.create({
-    data: { email, nome, senha, telefone, data_aniversario },
+    data: { 
+      email, 
+      nome, 
+      senha: hashedPassword, 
+      telefone, 
+      data_aniversario },
   });
   res.json(usuario);
+};
+
+// Função de login
+export const autentica = async (req: Request, res: Response): Promise<void> => {
+  const { email, senha } = req.body;
+
+  try {
+    // Verificar se o usuário existe
+    const usuario = await prisma.tb_usuario.findUnique({
+      where: { email },
+    });
+
+    if (!usuario) {
+       res.status(404).json({ error: 'Usuário não encontrado' });
+       return
+    }
+
+    // Comparar a senha fornecida com o hash armazenado no banco de dados
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
+    if (!senhaValida) {
+      res.status(401).json({ error: 'Senha incorreta' });
+      return
+    }
+
+    // Login bem-sucedido
+    res.status(200).json({ message: 'Login bem-sucedido' });
+    return
+  } catch (error) {
+    // Erro ao processar a requisição
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao fazer login' });
+  }
 };
 
 export const createPedido = async (req: Request, res: Response) => {
