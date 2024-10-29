@@ -1,8 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
+
+
+const SECRET_KEY = 'hackathon'; 
 
 export const getProdutos = async (req: Request, res: Response) => {
   const produtos = await prisma.tb_produto.findMany();
@@ -65,9 +69,15 @@ export const autentica = async (req: Request, res: Response): Promise<void> => {
       return
     }
 
-    // Login bem-sucedido
-    res.status(200).json({ message: 'Login bem-sucedido' });
-    return
+     // Login bem-sucedido: Gerar um token JWT
+     const token = jwt.sign(
+      { id: usuario.id, email: usuario.email }, // Dados para incluir no token
+      SECRET_KEY, // Chave secreta
+      { expiresIn: '1h' } // Duração do token
+    );
+
+    res.status(200).json({ message: 'Login bem-sucedido', token });
+
   } catch (error) {
     // Erro ao processar a requisição
     console.error(error);
