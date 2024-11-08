@@ -76,6 +76,7 @@ export const autentica = async (req: Request, res: Response): Promise<void> => {
       { expiresIn: '1h' } // Duração do token
     );
 
+    
     res.status(200).json({ message: 'Login bem-sucedido', token });
 
   } catch (error) {
